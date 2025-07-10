@@ -1,0 +1,3023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Soundboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+            background-size: 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px 15px 0 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            overflow: hidden;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-button:last-child {
+            border-right: none;
+        }
+
+        .tab-button:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: rgba(255,255,255,0.3);
+            box-shadow: inset 0 -3px 0 #4ecdc4;
+        }
+
+        .tab-content {
+            display: none;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-top: none;
+            border-radius: 0 0 15px 15px;
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sound-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .sound-card {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .sound-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.2);
+        }
+
+        .sound-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sound-title.clickable {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.1);
+            text-align: center;
+            user-select: none;
+        }
+
+        .sound-title.clickable:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.02);
+            color: #4ecdc4;
+        }
+
+        .sound-title.clickable.playing {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .sound-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .play-btn, .download-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .play-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+        }
+
+        .play-btn:hover {
+            background: linear-gradient(45deg, #ee5a24, #ff6b6b);
+            transform: scale(1.05);
+        }
+
+        .play-btn.playing {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(45deg, #44a08d, #4ecdc4);
+            transform: scale(1.05);
+        }
+
+        .now-playing {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+            max-width: 300px;
+        }
+
+        .volume-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .volume-slider {
+            width: 100px;
+            height: 5px;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .sound-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .volume-control {
+                position: static;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Audio Soundboard</h1>
+        </div>
+
+        <div class="volume-control">
+            <span>🔊</span>
+            <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="50">
+            <span id="volumeText">50%</span>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <!-- Tabs will be generated here -->
+        </div>
+
+        <div id="tabContents">
+            <!-- Tab contents will be generated here -->
+        </div>
+    </div>
+
+    <div class="now-playing" id="nowPlaying">
+        <div>Now Playing: <span id="currentTrack"></span></div>
+    </div>
+
+    <audio id="audioPlayer" preload="none"></audio>
+
+    <script>
+        const audioData = {
+        "Billal": [
+                {
+                        "filename": "Billal - Ahh!.mp3",
+                        "title": "Ahh!",
+                        "path": "Billal - Ahh!.mp3"
+                },
+                {
+                        "filename": "Billal - Come here thot.mp3",
+                        "title": "Come here thot",
+                        "path": "Billal - Come here thot.mp3"
+                },
+                {
+                        "filename": "Billal - I'm getting shot through the window.mp3",
+                        "title": "I'm getting shot through the window",
+                        "path": "Billal - I'm getting shot through the window.mp3"
+                },
+                {
+                        "filename": "Billal - Nig nog.mp3",
+                        "title": "Nig nog",
+                        "path": "Billal - Nig nog.mp3"
+                },
+                {
+                        "filename": "Billal - Smeagol handy.mp3",
+                        "title": "Smeagol handy",
+                        "path": "Billal - Smeagol handy.mp3"
+                },
+                {
+                        "filename": "Billal - Spawn is bad.mp3",
+                        "title": "Spawn is bad",
+                        "path": "Billal - Spawn is bad.mp3"
+                },
+                {
+                        "filename": "Billal - You get off of him.mp3",
+                        "title": "You get off of him",
+                        "path": "Billal - You get off of him.mp3"
+                }
+        ],
+        "BP": [
+                {
+                        "filename": "BP - If it don't got bone in it.mp3",
+                        "title": "If it don't got bone in it",
+                        "path": "BP - If it don't got bone in it.mp3"
+                },
+                {
+                        "filename": "BP - Let me get a boneless pizza.mp3",
+                        "title": "Let me get a boneless pizza",
+                        "path": "BP - Let me get a boneless pizza.mp3"
+                },
+                {
+                        "filename": "BP - Let me get that BONELESS.mp3",
+                        "title": "Let me get that BONELESS",
+                        "path": "BP - Let me get that BONELESS.mp3"
+                },
+                {
+                        "filename": "BP - What you want.mp3",
+                        "title": "What you want",
+                        "path": "BP - What you want.mp3"
+                },
+                {
+                        "filename": "BP - Ya'll got bones in this shit.mp3",
+                        "title": "Ya'll got bones in this shit",
+                        "path": "BP - Ya'll got bones in this shit.mp3"
+                }
+        ],
+        "Brad": [
+                {
+                        "filename": "Brad - Big boner.mp3",
+                        "title": "Big boner",
+                        "path": "Brad - Big boner.mp3"
+                },
+                {
+                        "filename": "Brad - Blow my horn.mp3",
+                        "title": "Blow my horn",
+                        "path": "Brad - Blow my horn.mp3"
+                },
+                {
+                        "filename": "Brad - Buttsniffer.mp3",
+                        "title": "Buttsniffer",
+                        "path": "Brad - Buttsniffer.mp3"
+                },
+                {
+                        "filename": "Brad - Chair.mp3",
+                        "title": "Chair",
+                        "path": "Brad - Chair.mp3"
+                },
+                {
+                        "filename": "Brad - Clamp those cheeks.mp3",
+                        "title": "Clamp those cheeks",
+                        "path": "Brad - Clamp those cheeks.mp3"
+                },
+                {
+                        "filename": "Brad - Clobbered his cock.mp3",
+                        "title": "Clobbered his cock",
+                        "path": "Brad - Clobbered his cock.mp3"
+                },
+                {
+                        "filename": "Brad - Compare sizes.mp3",
+                        "title": "Compare sizes",
+                        "path": "Brad - Compare sizes.mp3"
+                },
+                {
+                        "filename": "Brad - Cunt.mp3",
+                        "title": "Cunt",
+                        "path": "Brad - Cunt.mp3"
+                },
+                {
+                        "filename": "Brad - Elden ring.mp3",
+                        "title": "Elden ring",
+                        "path": "Brad - Elden ring.mp3"
+                },
+                {
+                        "filename": "Brad - Exhaust in ARAM.mp3",
+                        "title": "Exhaust in ARAM",
+                        "path": "Brad - Exhaust in ARAM.mp3"
+                },
+                {
+                        "filename": "Brad - Fix my settings.mp3",
+                        "title": "Fix my settings",
+                        "path": "Brad - Fix my settings.mp3"
+                },
+                {
+                        "filename": "Brad - Fuck this bitch.mp3",
+                        "title": "Fuck this bitch",
+                        "path": "Brad - Fuck this bitch.mp3"
+                },
+                {
+                        "filename": "Brad - Fucking retard.mp3",
+                        "title": "Fucking retard",
+                        "path": "Brad - Fucking retard.mp3"
+                },
+                {
+                        "filename": "Brad - Furry skag fag.mp3",
+                        "title": "Furry skag fag",
+                        "path": "Brad - Furry skag fag.mp3"
+                },
+                {
+                        "filename": "Brad - Gay dwarf.mp3",
+                        "title": "Gay dwarf",
+                        "path": "Brad - Gay dwarf.mp3"
+                },
+                {
+                        "filename": "Brad - Got any coom.mp3",
+                        "title": "Got any coom",
+                        "path": "Brad - Got any coom.mp3"
+                },
+                {
+                        "filename": "Brad - He'll fuck anything.mp3",
+                        "title": "He'll fuck anything",
+                        "path": "Brad - He'll fuck anything.mp3"
+                },
+                {
+                        "filename": "Brad - He's cooming for me.mp3",
+                        "title": "He's cooming for me",
+                        "path": "Brad - He's cooming for me.mp3"
+                },
+                {
+                        "filename": "Brad - He's cooming.mp3",
+                        "title": "He's cooming",
+                        "path": "Brad - He's cooming.mp3"
+                },
+                {
+                        "filename": "Brad - He's still cooming.mp3",
+                        "title": "He's still cooming",
+                        "path": "Brad - He's still cooming.mp3"
+                },
+                {
+                        "filename": "Brad - Help help.mp3",
+                        "title": "Help help",
+                        "path": "Brad - Help help.mp3"
+                },
+                {
+                        "filename": "Brad - Hey sock sucker.mp3",
+                        "title": "Hey sock sucker",
+                        "path": "Brad - Hey sock sucker.mp3"
+                },
+                {
+                        "filename": "Brad - I can't bust.mp3",
+                        "title": "I can't bust",
+                        "path": "Brad - I can't bust.mp3"
+                },
+                {
+                        "filename": "Brad - I gave blowies.mp3",
+                        "title": "I gave blowies",
+                        "path": "Brad - I gave blowies.mp3"
+                },
+                {
+                        "filename": "Brad - I got coomed on.mp3",
+                        "title": "I got coomed on",
+                        "path": "Brad - I got coomed on.mp3"
+                },
+                {
+                        "filename": "Brad - I'm cumed.mp3",
+                        "title": "I'm cumed",
+                        "path": "Brad - I'm cumed.mp3"
+                },
+                {
+                        "filename": "Brad - I'm feeling frisky.mp3",
+                        "title": "I'm feeling frisky",
+                        "path": "Brad - I'm feeling frisky.mp3"
+                },
+                {
+                        "filename": "Brad - I'm getting sucked off.mp3",
+                        "title": "I'm getting sucked off",
+                        "path": "Brad - I'm getting sucked off.mp3"
+                },
+                {
+                        "filename": "Brad - I'm going to bed.mp3",
+                        "title": "I'm going to bed",
+                        "path": "Brad - I'm going to bed.mp3"
+                },
+                {
+                        "filename": "Brad - Jingle Bells.mp3",
+                        "title": "Jingle Bells",
+                        "path": "Brad - Jingle Bells.mp3"
+                },
+                {
+                        "filename": "Brad - Josh fucked it up.mp3",
+                        "title": "Josh fucked it up",
+                        "path": "Brad - Josh fucked it up.mp3"
+                },
+                {
+                        "filename": "Brad - Lick-a-lot-o-pus.mp3",
+                        "title": "Lick-a-lot-o-pus",
+                        "path": "Brad - Lick-a-lot-o-pus.mp3"
+                },
+                {
+                        "filename": "Brad - Massive one.mp3",
+                        "title": "Massive one",
+                        "path": "Brad - Massive one.mp3"
+                },
+                {
+                        "filename": "Brad - Noises.mp3",
+                        "title": "Noises",
+                        "path": "Brad - Noises.mp3"
+                },
+                {
+                        "filename": "Brad - Oh Lew.mp3",
+                        "title": "Oh Lew",
+                        "path": "Brad - Oh Lew.mp3"
+                },
+                {
+                        "filename": "Brad - Pantheon is a silly billy.mp3",
+                        "title": "Pantheon is a silly billy",
+                        "path": "Brad - Pantheon is a silly billy.mp3"
+                },
+                {
+                        "filename": "Brad - Picked my cock.mp3",
+                        "title": "Picked my cock",
+                        "path": "Brad - Picked my cock.mp3"
+                },
+                {
+                        "filename": "Brad - Pooped my pants.mp3",
+                        "title": "Pooped my pants",
+                        "path": "Brad - Pooped my pants.mp3"
+                },
+                {
+                        "filename": "Brad - Pussy in ground.mp3",
+                        "title": "Pussy in ground",
+                        "path": "Brad - Pussy in ground.mp3"
+                },
+                {
+                        "filename": "Brad - Rap.mp3",
+                        "title": "Rap",
+                        "path": "Brad - Rap.mp3"
+                },
+                {
+                        "filename": "Brad - Rip my dick off.mp3",
+                        "title": "Rip my dick off",
+                        "path": "Brad - Rip my dick off.mp3"
+                },
+                {
+                        "filename": "Brad - Sexy SOB.mp3",
+                        "title": "Sexy SOB",
+                        "path": "Brad - Sexy SOB.mp3"
+                },
+                {
+                        "filename": "Brad - Should have gone in my hands.mp3",
+                        "title": "Should have gone in my hands",
+                        "path": "Brad - Should have gone in my hands.mp3"
+                },
+                {
+                        "filename": "Brad - Slow geriatric.mp3",
+                        "title": "Slow geriatric",
+                        "path": "Brad - Slow geriatric.mp3"
+                },
+                {
+                        "filename": "Brad - Soundboard.mp3",
+                        "title": "Soundboard",
+                        "path": "Brad - Soundboard.mp3"
+                },
+                {
+                        "filename": "Brad - Stepped on my cock.mp3",
+                        "title": "Stepped on my cock",
+                        "path": "Brad - Stepped on my cock.mp3"
+                },
+                {
+                        "filename": "Brad - Stop fingering him.mp3",
+                        "title": "Stop fingering him",
+                        "path": "Brad - Stop fingering him.mp3"
+                },
+                {
+                        "filename": "Brad - The cumer is dead.mp3",
+                        "title": "The cumer is dead",
+                        "path": "Brad - The cumer is dead.mp3"
+                },
+                {
+                        "filename": "Brad - Tickle the sphincter.mp3",
+                        "title": "Tickle the sphincter",
+                        "path": "Brad - Tickle the sphincter.mp3"
+                },
+                {
+                        "filename": "Brad - Toss my salad.mp3",
+                        "title": "Toss my salad",
+                        "path": "Brad - Toss my salad.mp3"
+                },
+                {
+                        "filename": "Brad - Trix are for fags.mp3",
+                        "title": "Trix are for fags",
+                        "path": "Brad - Trix are for fags.mp3"
+                },
+                {
+                        "filename": "Brad - We're cooming.mp3",
+                        "title": "We're cooming",
+                        "path": "Brad - We're cooming.mp3"
+                },
+                {
+                        "filename": "Brad - We're getting cumed.mp3",
+                        "title": "We're getting cumed",
+                        "path": "Brad - We're getting cumed.mp3"
+                },
+                {
+                        "filename": "Brad - What the fuck.mp3",
+                        "title": "What the fuck",
+                        "path": "Brad - What the fuck.mp3"
+                },
+                {
+                        "filename": "Brad - What the heck.mp3",
+                        "title": "What the heck",
+                        "path": "Brad - What the heck.mp3"
+                },
+                {
+                        "filename": "Brad - What the hell.mp3",
+                        "title": "What the hell",
+                        "path": "Brad - What the hell.mp3"
+                },
+                {
+                        "filename": "Brad - Who is this fucker.mp3",
+                        "title": "Who is this fucker",
+                        "path": "Brad - Who is this fucker.mp3"
+                },
+                {
+                        "filename": "Brad - You fucking cunt.mp3",
+                        "title": "You fucking cunt",
+                        "path": "Brad - You fucking cunt.mp3"
+                },
+                {
+                        "filename": "Brad - You little rat 2.mp3",
+                        "title": "You little rat 2",
+                        "path": "Brad - You little rat 2.mp3"
+                },
+                {
+                        "filename": "Brad - You little rat.mp3",
+                        "title": "You little rat",
+                        "path": "Brad - You little rat.mp3"
+                }
+        ],
+        "Jackie": [
+                {
+                        "filename": "Jackie - Too short.mp3",
+                        "title": "Too short",
+                        "path": "Jackie - Too short.mp3"
+                }
+        ],
+        "Joe": [
+                {
+                        "filename": "Joe - I'm about to get fucked.mp3",
+                        "title": "I'm about to get fucked",
+                        "path": "Joe - I'm about to get fucked.mp3"
+                }
+        ],
+        "Josh": [
+                {
+                        "filename": "Josh - Aiee.mp3",
+                        "title": "Aiee",
+                        "path": "Josh - Aiee.mp3"
+                },
+                {
+                        "filename": "Josh - Answering machine.mp3",
+                        "title": "Answering machine",
+                        "path": "Josh - Answering machine.mp3"
+                },
+                {
+                        "filename": "Josh - Are you kidding me.mp3",
+                        "title": "Are you kidding me",
+                        "path": "Josh - Are you kidding me.mp3"
+                },
+                {
+                        "filename": "Josh - Ballsniffer.mp3",
+                        "title": "Ballsniffer",
+                        "path": "Josh - Ballsniffer.mp3"
+                },
+                {
+                        "filename": "Josh - Barrier.mp3",
+                        "title": "Barrier",
+                        "path": "Josh - Barrier.mp3"
+                },
+                {
+                        "filename": "Josh - Brrr 3.mp3",
+                        "title": "Brrr 3",
+                        "path": "Josh - Brrr 3.mp3"
+                },
+                {
+                        "filename": "Josh - Brrr 4.mp3",
+                        "title": "Brrr 4",
+                        "path": "Josh - Brrr 4.mp3"
+                },
+                {
+                        "filename": "Josh - Brrrr 2.mp3",
+                        "title": "Brrrr 2",
+                        "path": "Josh - Brrrr 2.mp3"
+                },
+                {
+                        "filename": "Josh - Brrrr.mp3",
+                        "title": "Brrrr",
+                        "path": "Josh - Brrrr.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 10.mp3",
+                        "title": "Burp 10",
+                        "path": "Josh - Burp 10.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 11.mp3",
+                        "title": "Burp 11",
+                        "path": "Josh - Burp 11.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 12.mp3",
+                        "title": "Burp 12",
+                        "path": "Josh - Burp 12.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 13.mp3",
+                        "title": "Burp 13",
+                        "path": "Josh - Burp 13.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 14.mp3",
+                        "title": "Burp 14",
+                        "path": "Josh - Burp 14.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 15.mp3",
+                        "title": "Burp 15",
+                        "path": "Josh - Burp 15.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 2.mp3",
+                        "title": "Burp 2",
+                        "path": "Josh - Burp 2.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 3.mp3",
+                        "title": "Burp 3",
+                        "path": "Josh - Burp 3.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 4.mp3",
+                        "title": "Burp 4",
+                        "path": "Josh - Burp 4.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 5.mp3",
+                        "title": "Burp 5",
+                        "path": "Josh - Burp 5.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 6.mp3",
+                        "title": "Burp 6",
+                        "path": "Josh - Burp 6.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 7.mp3",
+                        "title": "Burp 7",
+                        "path": "Josh - Burp 7.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 8.mp3",
+                        "title": "Burp 8",
+                        "path": "Josh - Burp 8.mp3"
+                },
+                {
+                        "filename": "Josh - Burp 9.mp3",
+                        "title": "Burp 9",
+                        "path": "Josh - Burp 9.mp3"
+                },
+                {
+                        "filename": "Josh - Burp.mp3",
+                        "title": "Burp",
+                        "path": "Josh - Burp.mp3"
+                },
+                {
+                        "filename": "Josh - Cena.mp3",
+                        "title": "Cena",
+                        "path": "Josh - Cena.mp3"
+                },
+                {
+                        "filename": "Josh - Clap them cheeks.mp3",
+                        "title": "Clap them cheeks",
+                        "path": "Josh - Clap them cheeks.mp3"
+                },
+                {
+                        "filename": "Josh - Crickets.mp3",
+                        "title": "Crickets",
+                        "path": "Josh - Crickets.mp3"
+                },
+                {
+                        "filename": "Josh - Deep dick dolly dumpster.mp3",
+                        "title": "Deep dick dolly dumpster",
+                        "path": "Josh - Deep dick dolly dumpster.mp3"
+                },
+                {
+                        "filename": "Josh - Duck.mp3",
+                        "title": "Duck",
+                        "path": "Josh - Duck.mp3"
+                },
+                {
+                        "filename": "Josh - Every hole.mp3",
+                        "title": "Every hole",
+                        "path": "Josh - Every hole.mp3"
+                },
+                {
+                        "filename": "Josh - Get away.mp3",
+                        "title": "Get away",
+                        "path": "Josh - Get away.mp3"
+                },
+                {
+                        "filename": "Josh - Giberish.mp3",
+                        "title": "Giberish",
+                        "path": "Josh - Giberish.mp3"
+                },
+                {
+                        "filename": "Josh - Go so far.mp3",
+                        "title": "Go so far",
+                        "path": "Josh - Go so far.mp3"
+                },
+                {
+                        "filename": "Josh - Gulp.mp3",
+                        "title": "Gulp",
+                        "path": "Josh - Gulp.mp3"
+                },
+                {
+                        "filename": "Josh - He did more damage.mp3",
+                        "title": "He did more damage",
+                        "path": "Josh - He did more damage.mp3"
+                },
+                {
+                        "filename": "Josh - He's playing up here.mp3",
+                        "title": "He's playing up here",
+                        "path": "Josh - He's playing up here.mp3"
+                },
+                {
+                        "filename": "Josh - Hiccup 4.mp3",
+                        "title": "Hiccup 4",
+                        "path": "Josh - Hiccup 4.mp3"
+                },
+                {
+                        "filename": "Josh - Hicup 2.mp3",
+                        "title": "Hicup 2",
+                        "path": "Josh - Hicup 2.mp3"
+                },
+                {
+                        "filename": "Josh - Hicup 3.mp3",
+                        "title": "Hicup 3",
+                        "path": "Josh - Hicup 3.mp3"
+                },
+                {
+                        "filename": "Josh - Hicup.mp3",
+                        "title": "Hicup",
+                        "path": "Josh - Hicup.mp3"
+                },
+                {
+                        "filename": "Josh - How did I die.mp3",
+                        "title": "How did I die",
+                        "path": "Josh - How did I die.mp3"
+                },
+                {
+                        "filename": "Josh - I can't see.mp3",
+                        "title": "I can't see",
+                        "path": "Josh - I can't see.mp3"
+                },
+                {
+                        "filename": "Josh - I pressed zonyas.mp3",
+                        "title": "I pressed zonyas",
+                        "path": "Josh - I pressed zonyas.mp3"
+                },
+                {
+                        "filename": "Josh - I rolled.mp3",
+                        "title": "I rolled",
+                        "path": "Josh - I rolled.mp3"
+                },
+                {
+                        "filename": "Josh - I suck.mp3",
+                        "title": "I suck",
+                        "path": "Josh - I suck.mp3"
+                },
+                {
+                        "filename": "Josh - I'm cumming.mp3",
+                        "title": "I'm cumming",
+                        "path": "Josh - I'm cumming.mp3"
+                },
+                {
+                        "filename": "Josh - I'm gay.mp3",
+                        "title": "I'm gay",
+                        "path": "Josh - I'm gay.mp3"
+                },
+                {
+                        "filename": "Josh - I'm gonna suck this guy off.mp3",
+                        "title": "I'm gonna suck this guy off",
+                        "path": "Josh - I'm gonna suck this guy off.mp3"
+                },
+                {
+                        "filename": "Josh - I'm pressing my buttons.mp3",
+                        "title": "I'm pressing my buttons",
+                        "path": "Josh - I'm pressing my buttons.mp3"
+                },
+                {
+                        "filename": "Josh - Ignite.mp3",
+                        "title": "Ignite",
+                        "path": "Josh - Ignite.mp3"
+                },
+                {
+                        "filename": "Josh - Jar Jar.mp3",
+                        "title": "Jar Jar",
+                        "path": "Josh - Jar Jar.mp3"
+                },
+                {
+                        "filename": "Josh - Karma, E me.mp3",
+                        "title": "Karma, E me",
+                        "path": "Josh - Karma, E me.mp3"
+                },
+                {
+                        "filename": "Josh - Kike.mp3",
+                        "title": "Kike",
+                        "path": "Josh - Kike.mp3"
+                },
+                {
+                        "filename": "Josh - Little rat.mp3",
+                        "title": "Little rat",
+                        "path": "Josh - Little rat.mp3"
+                },
+                {
+                        "filename": "Josh - Monkey man.mp3",
+                        "title": "Monkey man",
+                        "path": "Josh - Monkey man.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 2.mp3",
+                        "title": "Noises 2",
+                        "path": "Josh - Noises 2.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 3.mp3",
+                        "title": "Noises 3",
+                        "path": "Josh - Noises 3.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 4.mp3",
+                        "title": "Noises 4",
+                        "path": "Josh - Noises 4.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 5.mp3",
+                        "title": "Noises 5",
+                        "path": "Josh - Noises 5.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 6.mp3",
+                        "title": "Noises 6",
+                        "path": "Josh - Noises 6.mp3"
+                },
+                {
+                        "filename": "Josh - Noises 7.mp3",
+                        "title": "Noises 7",
+                        "path": "Josh - Noises 7.mp3"
+                },
+                {
+                        "filename": "Josh - Noises.mp3",
+                        "title": "Noises",
+                        "path": "Josh - Noises.mp3"
+                },
+                {
+                        "filename": "Josh - Nuts in mouth.mp3",
+                        "title": "Nuts in mouth",
+                        "path": "Josh - Nuts in mouth.mp3"
+                },
+                {
+                        "filename": "Josh - Penta.mp3",
+                        "title": "Penta",
+                        "path": "Josh - Penta.mp3"
+                },
+                {
+                        "filename": "Josh - Rip my dick off.mp3",
+                        "title": "Rip my dick off",
+                        "path": "Josh - Rip my dick off.mp3"
+                },
+                {
+                        "filename": "Josh - Run.mp3",
+                        "title": "Run",
+                        "path": "Josh - Run.mp3"
+                },
+                {
+                        "filename": "Josh - Shaman hole.mp3",
+                        "title": "Shaman hole",
+                        "path": "Josh - Shaman hole.mp3"
+                },
+                {
+                        "filename": "Josh - Suck my unit.mp3",
+                        "title": "Suck my unit",
+                        "path": "Josh - Suck my unit.mp3"
+                },
+                {
+                        "filename": "Josh - Suck off better.mp3",
+                        "title": "Suck off better",
+                        "path": "Josh - Suck off better.mp3"
+                },
+                {
+                        "filename": "Josh - Sucked him off.mp3",
+                        "title": "Sucked him off",
+                        "path": "Josh - Sucked him off.mp3"
+                },
+                {
+                        "filename": "Josh - Takes it in the ass.mp3",
+                        "title": "Takes it in the ass",
+                        "path": "Josh - Takes it in the ass.mp3"
+                },
+                {
+                        "filename": "Josh - That didn't kill her.mp3",
+                        "title": "That didn't kill her",
+                        "path": "Josh - That didn't kill her.mp3"
+                },
+                {
+                        "filename": "Josh - That was some BS.mp3",
+                        "title": "That was some BS",
+                        "path": "Josh - That was some BS.mp3"
+                },
+                {
+                        "filename": "Josh - That's so gay.mp3",
+                        "title": "That's so gay",
+                        "path": "Josh - That's so gay.mp3"
+                },
+                {
+                        "filename": "Josh - Tickle the sphicter.mp3",
+                        "title": "Tickle the sphicter",
+                        "path": "Josh - Tickle the sphicter.mp3"
+                },
+                {
+                        "filename": "Josh - Voice crack 2.mp3",
+                        "title": "Voice crack 2",
+                        "path": "Josh - Voice crack 2.mp3"
+                },
+                {
+                        "filename": "Josh - Voice crack.mp3",
+                        "title": "Voice crack",
+                        "path": "Josh - Voice crack.mp3"
+                },
+                {
+                        "filename": "Josh - We're so dry.mp3",
+                        "title": "We're so dry",
+                        "path": "Josh - We're so dry.mp3"
+                },
+                {
+                        "filename": "Josh - What is hitting me.mp3",
+                        "title": "What is hitting me",
+                        "path": "Josh - What is hitting me.mp3"
+                },
+                {
+                        "filename": "Josh - What the ahh.mp3",
+                        "title": "What the ahh",
+                        "path": "Josh - What the ahh.mp3"
+                },
+                {
+                        "filename": "Josh - What the gay.mp3",
+                        "title": "What the gay",
+                        "path": "Josh - What the gay.mp3"
+                },
+                {
+                        "filename": "Josh - What was that.mp3",
+                        "title": "What was that",
+                        "path": "Josh - What was that.mp3"
+                },
+                {
+                        "filename": "Josh - What.mp3",
+                        "title": "What",
+                        "path": "Josh - What.mp3"
+                },
+                {
+                        "filename": "Josh - Wtf is this thing.mp3",
+                        "title": "Wtf is this thing",
+                        "path": "Josh - Wtf is this thing.mp3"
+                },
+                {
+                        "filename": "Josh - Yes, ahhh.mp3",
+                        "title": "Yes, ahhh",
+                        "path": "Josh - Yes, ahhh.mp3"
+                },
+                {
+                        "filename": "Josh - You dirty bitch.mp3",
+                        "title": "You dirty bitch",
+                        "path": "Josh - You dirty bitch.mp3"
+                }
+        ],
+        "Justin": [
+                {
+                        "filename": "Justin - Big nig.mp3",
+                        "title": "Big nig",
+                        "path": "Justin - Big nig.mp3"
+                },
+                {
+                        "filename": "Justin - Bukakke.mp3",
+                        "title": "Bukakke",
+                        "path": "Justin - Bukakke.mp3"
+                },
+                {
+                        "filename": "Justin - Crack whore.mp3",
+                        "title": "Crack whore",
+                        "path": "Justin - Crack whore.mp3"
+                },
+                {
+                        "filename": "Justin - Derp.mp3",
+                        "title": "Derp",
+                        "path": "Justin - Derp.mp3"
+                },
+                {
+                        "filename": "Justin - Down my throat.mp3",
+                        "title": "Down my throat",
+                        "path": "Justin - Down my throat.mp3"
+                },
+                {
+                        "filename": "Justin - Fart.mp3",
+                        "title": "Fart",
+                        "path": "Justin - Fart.mp3"
+                },
+                {
+                        "filename": "Justin - Fat bust.mp3",
+                        "title": "Fat bust",
+                        "path": "Justin - Fat bust.mp3"
+                },
+                {
+                        "filename": "Justin - Fuck me to tears.mp3",
+                        "title": "Fuck me to tears",
+                        "path": "Justin - Fuck me to tears.mp3"
+                },
+                {
+                        "filename": "Justin - Getting gang railed.mp3",
+                        "title": "Getting gang railed",
+                        "path": "Justin - Getting gang railed.mp3"
+                },
+                {
+                        "filename": "Justin - Haha.mp3",
+                        "title": "Haha",
+                        "path": "Justin - Haha.mp3"
+                },
+                {
+                        "filename": "Justin - I'll see you in hell.mp3",
+                        "title": "I'll see you in hell",
+                        "path": "Justin - I'll see you in hell.mp3"
+                },
+                {
+                        "filename": "Justin - I'm cumming.mp3",
+                        "title": "I'm cumming",
+                        "path": "Justin - I'm cumming.mp3"
+                },
+                {
+                        "filename": "Justin - Let's go.mp3",
+                        "title": "Let's go",
+                        "path": "Justin - Let's go.mp3"
+                },
+                {
+                        "filename": "Justin - Pee pee.mp3",
+                        "title": "Pee pee",
+                        "path": "Justin - Pee pee.mp3"
+                },
+                {
+                        "filename": "Justin - Ride that MF.mp3",
+                        "title": "Ride that MF",
+                        "path": "Justin - Ride that MF.mp3"
+                },
+                {
+                        "filename": "Justin - Son of a cock.mp3",
+                        "title": "Son of a cock",
+                        "path": "Justin - Son of a cock.mp3"
+                },
+                {
+                        "filename": "Justin - Sucked off.mp3",
+                        "title": "Sucked off",
+                        "path": "Justin - Sucked off.mp3"
+                },
+                {
+                        "filename": "Justin - What the boys doin.mp3",
+                        "title": "What the boys doin",
+                        "path": "Justin - What the boys doin.mp3"
+                },
+                {
+                        "filename": "Justin - Wine and dine me.mp3",
+                        "title": "Wine and dine me",
+                        "path": "Justin - Wine and dine me.mp3"
+                }
+        ],
+        "Jux": [
+                {
+                        "filename": "Jux - 4 dollar slave.mp3",
+                        "title": "4 dollar slave",
+                        "path": "Jux - 4 dollar slave.mp3"
+                },
+                {
+                        "filename": "Jux - Aww yeah.mp3",
+                        "title": "Aww yeah",
+                        "path": "Jux - Aww yeah.mp3"
+                },
+                {
+                        "filename": "Jux - Get behind her.mp3",
+                        "title": "Get behind her",
+                        "path": "Jux - Get behind her.mp3"
+                },
+                {
+                        "filename": "Jux - Grunt.mp3",
+                        "title": "Grunt",
+                        "path": "Jux - Grunt.mp3"
+                },
+                {
+                        "filename": "Jux - I do butt stuff.mp3",
+                        "title": "I do butt stuff",
+                        "path": "Jux - I do butt stuff.mp3"
+                },
+                {
+                        "filename": "Jux - I hate people.mp3",
+                        "title": "I hate people",
+                        "path": "Jux - I hate people.mp3"
+                },
+                {
+                        "filename": "Jux - I love feet.mp3",
+                        "title": "I love feet",
+                        "path": "Jux - I love feet.mp3"
+                },
+                {
+                        "filename": "Jux - I love minors.mp3",
+                        "title": "I love minors",
+                        "path": "Jux - I love minors.mp3"
+                },
+                {
+                        "filename": "Jux - I need help.mp3",
+                        "title": "I need help",
+                        "path": "Jux - I need help.mp3"
+                },
+                {
+                        "filename": "Jux - I'm cumming team.mp3",
+                        "title": "I'm cumming team",
+                        "path": "Jux - I'm cumming team.mp3"
+                },
+                {
+                        "filename": "Jux - I'm gonna murder.mp3",
+                        "title": "I'm gonna murder",
+                        "path": "Jux - I'm gonna murder.mp3"
+                },
+                {
+                        "filename": "Jux - It looks bigger.mp3",
+                        "title": "It looks bigger",
+                        "path": "Jux - It looks bigger.mp3"
+                },
+                {
+                        "filename": "Jux - Slob on your knob.mp3",
+                        "title": "Slob on your knob",
+                        "path": "Jux - Slob on your knob.mp3"
+                },
+                {
+                        "filename": "Jux - Smear the queer.mp3",
+                        "title": "Smear the queer",
+                        "path": "Jux - Smear the queer.mp3"
+                },
+                {
+                        "filename": "Jux - That's so dirty.mp3",
+                        "title": "That's so dirty",
+                        "path": "Jux - That's so dirty.mp3"
+                },
+                {
+                        "filename": "Jux - They're on barron.mp3",
+                        "title": "They're on barron",
+                        "path": "Jux - They're on barron.mp3"
+                },
+                {
+                        "filename": "Jux - Ult you homo.mp3",
+                        "title": "Ult you homo",
+                        "path": "Jux - Ult you homo.mp3"
+                },
+                {
+                        "filename": "Jux - Why is everyone there.mp3",
+                        "title": "Why is everyone there",
+                        "path": "Jux - Why is everyone there.mp3"
+                },
+                {
+                        "filename": "Jux - You're so big.mp3",
+                        "title": "You're so big",
+                        "path": "Jux - You're so big.mp3"
+                }
+        ],
+        "Kimbo": [
+                {
+                        "filename": "Kimbo - Albuquerque.mp3",
+                        "title": "Albuquerque",
+                        "path": "Kimbo - Albuquerque.mp3"
+                },
+                {
+                        "filename": "Kimbo - Fuck off, jarloc.mp3",
+                        "title": "Fuck off, jarloc",
+                        "path": "Kimbo - Fuck off, jarloc.mp3"
+                },
+                {
+                        "filename": "Kimbo - Unacceptable.mp3",
+                        "title": "Unacceptable",
+                        "path": "Kimbo - Unacceptable.mp3"
+                }
+        ],
+        "Lew": [
+                {
+                        "filename": "Lew - Black as night.mp3",
+                        "title": "Black as night",
+                        "path": "Lew - Black as night.mp3"
+                },
+                {
+                        "filename": "Lew - Can't hold me back.mp3",
+                        "title": "Can't hold me back",
+                        "path": "Lew - Can't hold me back.mp3"
+                },
+                {
+                        "filename": "Lew - Clap some cheeks.mp3",
+                        "title": "Clap some cheeks",
+                        "path": "Lew - Clap some cheeks.mp3"
+                },
+                {
+                        "filename": "Lew - Cock-a-doodle.mp3",
+                        "title": "Cock-a-doodle",
+                        "path": "Lew - Cock-a-doodle.mp3"
+                },
+                {
+                        "filename": "Lew - Do it for snuggies.mp3",
+                        "title": "Do it for snuggies",
+                        "path": "Lew - Do it for snuggies.mp3"
+                },
+                {
+                        "filename": "Lew - Evelynn up my asshole.mp3",
+                        "title": "Evelynn up my asshole",
+                        "path": "Lew - Evelynn up my asshole.mp3"
+                },
+                {
+                        "filename": "Lew - Fuckin dingbat.mp3",
+                        "title": "Fuckin dingbat",
+                        "path": "Lew - Fuckin dingbat.mp3"
+                },
+                {
+                        "filename": "Lew - Gobble her up.mp3",
+                        "title": "Gobble her up",
+                        "path": "Lew - Gobble her up.mp3"
+                },
+                {
+                        "filename": "Lew - Hit em with it.mp3",
+                        "title": "Hit em with it",
+                        "path": "Lew - Hit em with it.mp3"
+                },
+                {
+                        "filename": "Lew - Hit the nexus.mp3",
+                        "title": "Hit the nexus",
+                        "path": "Lew - Hit the nexus.mp3"
+                },
+                {
+                        "filename": "Lew - Hot step.mp3",
+                        "title": "Hot step",
+                        "path": "Lew - Hot step.mp3"
+                },
+                {
+                        "filename": "Lew - I'd tap that.mp3",
+                        "title": "I'd tap that",
+                        "path": "Lew - I'd tap that.mp3"
+                },
+                {
+                        "filename": "Lew - I'm high.mp3",
+                        "title": "I'm high",
+                        "path": "Lew - I'm high.mp3"
+                },
+                {
+                        "filename": "Lew - Not today bitch.mp3",
+                        "title": "Not today bitch",
+                        "path": "Lew - Not today bitch.mp3"
+                },
+                {
+                        "filename": "Lew - Pooped my pants.mp3",
+                        "title": "Pooped my pants",
+                        "path": "Lew - Pooped my pants.mp3"
+                },
+                {
+                        "filename": "Lew - Sacagawea.mp3",
+                        "title": "Sacagawea",
+                        "path": "Lew - Sacagawea.mp3"
+                },
+                {
+                        "filename": "Lew - Suck em off.mp3",
+                        "title": "Suck em off",
+                        "path": "Lew - Suck em off.mp3"
+                },
+                {
+                        "filename": "Lew - Sweet and sour sauce.mp3",
+                        "title": "Sweet and sour sauce",
+                        "path": "Lew - Sweet and sour sauce.mp3"
+                },
+                {
+                        "filename": "Lew - Tickle the sphincter.mp3",
+                        "title": "Tickle the sphincter",
+                        "path": "Lew - Tickle the sphincter.mp3"
+                },
+                {
+                        "filename": "Lew - Where's the slumber party.mp3",
+                        "title": "Where's the slumber party",
+                        "path": "Lew - Where's the slumber party.mp3"
+                },
+                {
+                        "filename": "Lew - Wombo combo.mp3",
+                        "title": "Wombo combo",
+                        "path": "Lew - Wombo combo.mp3"
+                }
+        ],
+        "Other": [
+                {
+                        "filename": "Other - A murder of crows.mp3",
+                        "title": "A murder of crows",
+                        "path": "Other - A murder of crows.mp3"
+                },
+                {
+                        "filename": "Other - Ah tabernak.mp3",
+                        "title": "Ah tabernak",
+                        "path": "Other - Ah tabernak.mp3"
+                },
+                {
+                        "filename": "Other - Am I in the right room.mp3",
+                        "title": "Am I in the right room",
+                        "path": "Other - Am I in the right room.mp3"
+                },
+                {
+                        "filename": "Other - An ally has been slain.mp3",
+                        "title": "An ally has been slain",
+                        "path": "Other - An ally has been slain.mp3"
+                },
+                {
+                        "filename": "Other - An illusion female.mp3",
+                        "title": "An illusion female",
+                        "path": "Other - An illusion female.mp3"
+                },
+                {
+                        "filename": "Other - An illusion male.mp3",
+                        "title": "An illusion male",
+                        "path": "Other - An illusion male.mp3"
+                },
+                {
+                        "filename": "Other - And there was much rejoicing.mp3",
+                        "title": "And there was much rejoicing",
+                        "path": "Other - And there was much rejoicing.mp3"
+                },
+                {
+                        "filename": "Other - Are you not entertained.mp3",
+                        "title": "Are you not entertained",
+                        "path": "Other - Are you not entertained.mp3"
+                },
+                {
+                        "filename": "Other - Backpack backpack.mp3",
+                        "title": "Backpack backpack",
+                        "path": "Other - Backpack backpack.mp3"
+                },
+                {
+                        "filename": "Other - Bad form.mp3",
+                        "title": "Bad form",
+                        "path": "Other - Bad form.mp3"
+                },
+                {
+                        "filename": "Other - Barrage.mp3",
+                        "title": "Barrage",
+                        "path": "Other - Barrage.mp3"
+                },
+                {
+                        "filename": "Other - Battle Roar.mp3",
+                        "title": "Battle Roar",
+                        "path": "Other - Battle Roar.mp3"
+                },
+                {
+                        "filename": "Other - Ben is a hoe.mp3",
+                        "title": "Ben is a hoe",
+                        "path": "Other - Ben is a hoe.mp3"
+                },
+                {
+                        "filename": "Other - Can we do more kazoo.mp3",
+                        "title": "Can we do more kazoo",
+                        "path": "Other - Can we do more kazoo.mp3"
+                },
+                {
+                        "filename": "Other - Can you eat pussy like that.mp3",
+                        "title": "Can you eat pussy like that",
+                        "path": "Other - Can you eat pussy like that.mp3"
+                },
+                {
+                        "filename": "Other - Cascade.mp3",
+                        "title": "Cascade",
+                        "path": "Other - Cascade.mp3"
+                },
+                {
+                        "filename": "Other - Cena.mp3",
+                        "title": "Cena",
+                        "path": "Other - Cena.mp3"
+                },
+                {
+                        "filename": "Other - Check it to wreck it.mp3",
+                        "title": "Check it to wreck it",
+                        "path": "Other - Check it to wreck it.mp3"
+                },
+                {
+                        "filename": "Other - China.mp3",
+                        "title": "China",
+                        "path": "Other - China.mp3"
+                },
+                {
+                        "filename": "Other - Come get your dinner.mp3",
+                        "title": "Come get your dinner",
+                        "path": "Other - Come get your dinner.mp3"
+                },
+                {
+                        "filename": "Other - Cyclone.mp3",
+                        "title": "Cyclone",
+                        "path": "Other - Cyclone.mp3"
+                },
+                {
+                        "filename": "Other - Dinner time.mp3",
+                        "title": "Dinner time",
+                        "path": "Other - Dinner time.mp3"
+                },
+                {
+                        "filename": "Other - Divine Star.mp3",
+                        "title": "Divine Star",
+                        "path": "Other - Divine Star.mp3"
+                },
+                {
+                        "filename": "Other - Do it.mp3",
+                        "title": "Do it",
+                        "path": "Other - Do it.mp3"
+                },
+                {
+                        "filename": "Other - Don't say such things.mp3",
+                        "title": "Don't say such things",
+                        "path": "Other - Don't say such things.mp3"
+                },
+                {
+                        "filename": "Other - Don't tell me how to live my life.mp3",
+                        "title": "Don't tell me how to live my life",
+                        "path": "Other - Don't tell me how to live my life.mp3"
+                },
+                {
+                        "filename": "Other - Ebola.mp3",
+                        "title": "Ebola",
+                        "path": "Other - Ebola.mp3"
+                },
+                {
+                        "filename": "Other - Electrocuted.mp3",
+                        "title": "Electrocuted",
+                        "path": "Other - Electrocuted.mp3"
+                },
+                {
+                        "filename": "Other - For the longest time.mp3",
+                        "title": "For the longest time",
+                        "path": "Other - For the longest time.mp3"
+                },
+                {
+                        "filename": "Other - Fuck you dumb ass boss.mp3",
+                        "title": "Fuck you dumb ass boss",
+                        "path": "Other - Fuck you dumb ass boss.mp3"
+                },
+                {
+                        "filename": "Other - Fucking douchebag.mp3",
+                        "title": "Fucking douchebag",
+                        "path": "Other - Fucking douchebag.mp3"
+                },
+                {
+                        "filename": "Other - Goat yell.mp3",
+                        "title": "Goat yell",
+                        "path": "Other - Goat yell.mp3"
+                },
+                {
+                        "filename": "Other - Godzilla.mp3",
+                        "title": "Godzilla",
+                        "path": "Other - Godzilla.mp3"
+                },
+                {
+                        "filename": "Other - Good for you.mp3",
+                        "title": "Good for you",
+                        "path": "Other - Good for you.mp3"
+                },
+                {
+                        "filename": "Other - Good form.mp3",
+                        "title": "Good form",
+                        "path": "Other - Good form.mp3"
+                },
+                {
+                        "filename": "Other - Goofy yell.mp3",
+                        "title": "Goofy yell",
+                        "path": "Other - Goofy yell.mp3"
+                },
+                {
+                        "filename": "Other - Got any grapes.mp3",
+                        "title": "Got any grapes",
+                        "path": "Other - Got any grapes.mp3"
+                },
+                {
+                        "filename": "Other - Greymane's forces.mp3",
+                        "title": "Greymane's forces",
+                        "path": "Other - Greymane's forces.mp3"
+                },
+                {
+                        "filename": "Other - Halo.mp3",
+                        "title": "Halo",
+                        "path": "Other - Halo.mp3"
+                },
+                {
+                        "filename": "Other - He's a potato.mp3",
+                        "title": "He's a potato",
+                        "path": "Other - He's a potato.mp3"
+                },
+                {
+                        "filename": "Other - Hey sock sucker.mp3",
+                        "title": "Hey sock sucker",
+                        "path": "Other - Hey sock sucker.mp3"
+                },
+                {
+                        "filename": "Other - Hey Steve!.mp3",
+                        "title": "Hey Steve!",
+                        "path": "Other - Hey Steve!.mp3"
+                },
+                {
+                        "filename": "Other - Hey, listen.mp3",
+                        "title": "Hey, listen",
+                        "path": "Other - Hey, listen.mp3"
+                },
+                {
+                        "filename": "Other - Hippo Fart.mp3",
+                        "title": "Hippo Fart",
+                        "path": "Other - Hippo Fart.mp3"
+                },
+                {
+                        "filename": "Other - Hog call.mp3",
+                        "title": "Hog call",
+                        "path": "Other - Hog call.mp3"
+                },
+                {
+                        "filename": "Other - Horrible creatures.mp3",
+                        "title": "Horrible creatures",
+                        "path": "Other - Horrible creatures.mp3"
+                },
+                {
+                        "filename": "Other - Hurricane.mp3",
+                        "title": "Hurricane",
+                        "path": "Other - Hurricane.mp3"
+                },
+                {
+                        "filename": "Other - I can break these cuffs.mp3",
+                        "title": "I can break these cuffs",
+                        "path": "Other - I can break these cuffs.mp3"
+                },
+                {
+                        "filename": "Other - I can't get up.mp3",
+                        "title": "I can't get up",
+                        "path": "Other - I can't get up.mp3"
+                },
+                {
+                        "filename": "Other - I don't need it.mp3",
+                        "title": "I don't need it",
+                        "path": "Other - I don't need it.mp3"
+                },
+                {
+                        "filename": "Other - I need it!.mp3",
+                        "title": "I need it!",
+                        "path": "Other - I need it!.mp3"
+                },
+                {
+                        "filename": "Other - I'm invincible.mp3",
+                        "title": "I'm invincible",
+                        "path": "Other - I'm invincible.mp3"
+                },
+                {
+                        "filename": "Other - I'm out.mp3",
+                        "title": "I'm out",
+                        "path": "Other - I'm out.mp3"
+                },
+                {
+                        "filename": "Other - I'm Ready!.mp3",
+                        "title": "I'm Ready!",
+                        "path": "Other - I'm Ready!.mp3"
+                },
+                {
+                        "filename": "Other - Idiot!.mp3",
+                        "title": "Idiot!",
+                        "path": "Other - Idiot!.mp3"
+                },
+                {
+                        "filename": "Other - It's a trap!.mp3",
+                        "title": "It's a trap!",
+                        "path": "Other - It's a trap!.mp3"
+                },
+                {
+                        "filename": "Other - It's gross!.mp3",
+                        "title": "It's gross!",
+                        "path": "Other - It's gross!.mp3"
+                },
+                {
+                        "filename": "Other - It's hard for her to swallow.mp3",
+                        "title": "It's hard for her to swallow",
+                        "path": "Other - It's hard for her to swallow.mp3"
+                },
+                {
+                        "filename": "Other - It's Jason Bourne.mp3",
+                        "title": "It's Jason Bourne",
+                        "path": "Other - It's Jason Bourne.mp3"
+                },
+                {
+                        "filename": "Other - It's only a game.mp3",
+                        "title": "It's only a game",
+                        "path": "Other - It's only a game.mp3"
+                },
+                {
+                        "filename": "Other - Jimbos number 1.mp3",
+                        "title": "Jimbos number 1",
+                        "path": "Other - Jimbos number 1.mp3"
+                },
+                {
+                        "filename": "Other - Just do it!.mp3",
+                        "title": "Just do it!",
+                        "path": "Other - Just do it!.mp3"
+                },
+                {
+                        "filename": "Other - Knights who say.mp3",
+                        "title": "Knights who say",
+                        "path": "Other - Knights who say.mp3"
+                },
+                {
+                        "filename": "Other - Leedle lee.mp3",
+                        "title": "Leedle lee",
+                        "path": "Other - Leedle lee.mp3"
+                },
+                {
+                        "filename": "Other - Leeroy Jenkins.mp3",
+                        "title": "Leeroy Jenkins",
+                        "path": "Other - Leeroy Jenkins.mp3"
+                },
+                {
+                        "filename": "Other - Lemme smash.mp3",
+                        "title": "Lemme smash",
+                        "path": "Other - Lemme smash.mp3"
+                },
+                {
+                        "filename": "Other - Let slip the dogs of war.mp3",
+                        "title": "Let slip the dogs of war",
+                        "path": "Other - Let slip the dogs of war.mp3"
+                },
+                {
+                        "filename": "Other - Let's break it down.mp3",
+                        "title": "Let's break it down",
+                        "path": "Other - Let's break it down.mp3"
+                },
+                {
+                        "filename": "Other - Look what I can do.mp3",
+                        "title": "Look what I can do",
+                        "path": "Other - Look what I can do.mp3"
+                },
+                {
+                        "filename": "Other - Make your dreams come true.mp3",
+                        "title": "Make your dreams come true",
+                        "path": "Other - Make your dreams come true.mp3"
+                },
+                {
+                        "filename": "Other - Mountain Dew.mp3",
+                        "title": "Mountain Dew",
+                        "path": "Other - Mountain Dew.mp3"
+                },
+                {
+                        "filename": "Other - My final essence depleated.mp3",
+                        "title": "My final essence depleated",
+                        "path": "Other - My final essence depleated.mp3"
+                },
+                {
+                        "filename": "Other - My Tra La La.mp3",
+                        "title": "My Tra La La",
+                        "path": "Other - My Tra La La.mp3"
+                },
+                {
+                        "filename": "Other - No Scrubs.mp3",
+                        "title": "No Scrubs",
+                        "path": "Other - No Scrubs.mp3"
+                },
+                {
+                        "filename": "Other - Ook you in the dooker.mp3",
+                        "title": "Ook you in the dooker",
+                        "path": "Other - Ook you in the dooker.mp3"
+                },
+                {
+                        "filename": "Other - Oops, I did it again.mp3",
+                        "title": "Oops, I did it again",
+                        "path": "Other - Oops, I did it again.mp3"
+                },
+                {
+                        "filename": "Other - Pa'valak.mp3",
+                        "title": "Pa'valak",
+                        "path": "Other - Pa'valak.mp3"
+                },
+                {
+                        "filename": "Other - Pacman.mp3",
+                        "title": "Pacman",
+                        "path": "Other - Pacman.mp3"
+                },
+                {
+                        "filename": "Other - Pav-Peppers.mp3",
+                        "title": "Pav-Peppers",
+                        "path": "Other - Pav-Peppers.mp3"
+                },
+                {
+                        "filename": "Other - Peppers.mp3",
+                        "title": "Peppers",
+                        "path": "Other - Peppers.mp3"
+                },
+                {
+                        "filename": "Other - PhD in PvP.mp3",
+                        "title": "PhD in PvP",
+                        "path": "Other - PhD in PvP.mp3"
+                },
+                {
+                        "filename": "Other - Pull the lever.mp3",
+                        "title": "Pull the lever",
+                        "path": "Other - Pull the lever.mp3"
+                },
+                {
+                        "filename": "Other - Push the button, Max.mp3",
+                        "title": "Push the button, Max",
+                        "path": "Other - Push the button, Max.mp3"
+                },
+                {
+                        "filename": "Other - Raining Tacos.mp3",
+                        "title": "Raining Tacos",
+                        "path": "Other - Raining Tacos.mp3"
+                },
+                {
+                        "filename": "Other - Roar.mp3",
+                        "title": "Roar",
+                        "path": "Other - Roar.mp3"
+                },
+                {
+                        "filename": "Other - Ruby bolt.mp3",
+                        "title": "Ruby bolt",
+                        "path": "Other - Ruby bolt.mp3"
+                },
+                {
+                        "filename": "Other - Salty.mp3",
+                        "title": "Salty",
+                        "path": "Other - Salty.mp3"
+                },
+                {
+                        "filename": "Other - Send in everyone!.mp3",
+                        "title": "Send in everyone!",
+                        "path": "Other - Send in everyone!.mp3"
+                },
+                {
+                        "filename": "Other - Sex noises.mp3",
+                        "title": "Sex noises",
+                        "path": "Other - Sex noises.mp3"
+                },
+                {
+                        "filename": "Other - Shots fired.mp3",
+                        "title": "Shots fired",
+                        "path": "Other - Shots fired.mp3"
+                },
+                {
+                        "filename": "Other - Snort.mp3",
+                        "title": "Snort",
+                        "path": "Other - Snort.mp3"
+                },
+                {
+                        "filename": "Other - Something's not quite right female.mp3",
+                        "title": "Something's not quite right female",
+                        "path": "Other - Something's not quite right female.mp3"
+                },
+                {
+                        "filename": "Other - Something's not quite right male.mp3",
+                        "title": "Something's not quite right male",
+                        "path": "Other - Something's not quite right male.mp3"
+                },
+                {
+                        "filename": "Other - SOS.mp3",
+                        "title": "SOS",
+                        "path": "Other - SOS.mp3"
+                },
+                {
+                        "filename": "Other - Stayin' alive.mp3",
+                        "title": "Stayin' alive",
+                        "path": "Other - Stayin' alive.mp3"
+                },
+                {
+                        "filename": "Other - Suck my unit.mp3",
+                        "title": "Suck my unit",
+                        "path": "Other - Suck my unit.mp3"
+                },
+                {
+                        "filename": "Other - Super ebola.mp3",
+                        "title": "Super ebola",
+                        "path": "Other - Super ebola.mp3"
+                },
+                {
+                        "filename": "Other - Super saiyan.mp3",
+                        "title": "Super saiyan",
+                        "path": "Other - Super saiyan.mp3"
+                },
+                {
+                        "filename": "Other - Swiggity swooty.mp3",
+                        "title": "Swiggity swooty",
+                        "path": "Other - Swiggity swooty.mp3"
+                },
+                {
+                        "filename": "Other - That's my boy.mp3",
+                        "title": "That's my boy",
+                        "path": "Other - That's my boy.mp3"
+                },
+                {
+                        "filename": "Other - That's what she said.mp3",
+                        "title": "That's what she said",
+                        "path": "Other - That's what she said.mp3"
+                },
+                {
+                        "filename": "Other - That's why I was confused.mp3",
+                        "title": "That's why I was confused",
+                        "path": "Other - That's why I was confused.mp3"
+                },
+                {
+                        "filename": "Other - Thomas.mp3",
+                        "title": "Thomas",
+                        "path": "Other - Thomas.mp3"
+                },
+                {
+                        "filename": "Other - To the batcave!.mp3",
+                        "title": "To the batcave!",
+                        "path": "Other - To the batcave!.mp3"
+                },
+                {
+                        "filename": "Other - Todd, hit the button.mp3",
+                        "title": "Todd, hit the button",
+                        "path": "Other - Todd, hit the button.mp3"
+                },
+                {
+                        "filename": "Other - Tread lightly.mp3",
+                        "title": "Tread lightly",
+                        "path": "Other - Tread lightly.mp3"
+                },
+                {
+                        "filename": "Other - Unacceptable! 2.mp3",
+                        "title": "Unacceptable! 2",
+                        "path": "Other - Unacceptable! 2.mp3"
+                },
+                {
+                        "filename": "Other - Unacceptable! 3.mp3",
+                        "title": "Unacceptable! 3",
+                        "path": "Other - Unacceptable! 3.mp3"
+                },
+                {
+                        "filename": "Other - Unacceptable! 4.mp3",
+                        "title": "Unacceptable! 4",
+                        "path": "Other - Unacceptable! 4.mp3"
+                },
+                {
+                        "filename": "Other - Unacceptable!.mp3",
+                        "title": "Unacceptable!",
+                        "path": "Other - Unacceptable!.mp3"
+                },
+                {
+                        "filename": "Other - Volley.mp3",
+                        "title": "Volley",
+                        "path": "Other - Volley.mp3"
+                },
+                {
+                        "filename": "Other - Waddled away.mp3",
+                        "title": "Waddled away",
+                        "path": "Other - Waddled away.mp3"
+                },
+                {
+                        "filename": "Other - Water!.mp3",
+                        "title": "Water!",
+                        "path": "Other - Water!.mp3"
+                },
+                {
+                        "filename": "Other - We've awoken the beast.mp3",
+                        "title": "We've awoken the beast",
+                        "path": "Other - We've awoken the beast.mp3"
+                },
+                {
+                        "filename": "Other - Well hello there!.mp3",
+                        "title": "Well hello there!",
+                        "path": "Other - Well hello there!.mp3"
+                },
+                {
+                        "filename": "Other - What!!!.mp3",
+                        "title": "What!!!",
+                        "path": "Other - What!!!.mp3"
+                },
+                {
+                        "filename": "Other - Whatever, I do what I want.mp3",
+                        "title": "Whatever, I do what I want",
+                        "path": "Other - Whatever, I do what I want.mp3"
+                },
+                {
+                        "filename": "Other - Whip.mp3",
+                        "title": "Whip",
+                        "path": "Other - Whip.mp3"
+                },
+                {
+                        "filename": "Other - Who bans Gnar.mp3",
+                        "title": "Who bans Gnar",
+                        "path": "Other - Who bans Gnar.mp3"
+                },
+                {
+                        "filename": "Other - Who cares!.mp3",
+                        "title": "Who cares!",
+                        "path": "Other - Who cares!.mp3"
+                },
+                {
+                        "filename": "Other - Wilhelm scream.mp3",
+                        "title": "Wilhelm scream",
+                        "path": "Other - Wilhelm scream.mp3"
+                },
+                {
+                        "filename": "Other - With arms wide open.mp3",
+                        "title": "With arms wide open",
+                        "path": "Other - With arms wide open.mp3"
+                },
+                {
+                        "filename": "Other - Yippy aye oh.mp3",
+                        "title": "Yippy aye oh",
+                        "path": "Other - Yippy aye oh.mp3"
+                },
+                {
+                        "filename": "Other - You just blow in from stupid town.mp3",
+                        "title": "You just blow in from stupid town",
+                        "path": "Other - You just blow in from stupid town.mp3"
+                },
+                {
+                        "filename": "Other - You must heed my instructions!.mp3",
+                        "title": "You must heed my instructions!",
+                        "path": "Other - You must heed my instructions!.mp3"
+                },
+                {
+                        "filename": "Other - You want some fuck.mp3",
+                        "title": "You want some fuck",
+                        "path": "Other - You want some fuck.mp3"
+                },
+                {
+                        "filename": "Other - You're so deep.mp3",
+                        "title": "You're so deep",
+                        "path": "Other - You're so deep.mp3"
+                },
+                {
+                        "filename": "Other - Your tail is small.mp3",
+                        "title": "Your tail is small",
+                        "path": "Other - Your tail is small.mp3"
+                }
+        ],
+        "Rowdy": [
+                {
+                        "filename": "Rowdy - He's gay.mp3",
+                        "title": "He's gay",
+                        "path": "Rowdy - He's gay.mp3"
+                }
+        ],
+        "RR": [
+                {
+                        "filename": "RR - 18 naked cowboys.mp3",
+                        "title": "18 naked cowboys",
+                        "path": "RR - 18 naked cowboys.mp3"
+                },
+                {
+                        "filename": "RR - Big throbbing cocks.mp3",
+                        "title": "Big throbbing cocks",
+                        "path": "RR - Big throbbing cocks.mp3"
+                },
+                {
+                        "filename": "RR - Orgies in the showers.mp3",
+                        "title": "Orgies in the showers",
+                        "path": "RR - Orgies in the showers.mp3"
+                },
+                {
+                        "filename": "RR - Really rocks.mp3",
+                        "title": "Really rocks",
+                        "path": "RR - Really rocks.mp3"
+                }
+        ],
+        "Spawn": [
+                {
+                        "filename": "Spawn - 5-year-olds.mp3",
+                        "title": "5-year-olds",
+                        "path": "Spawn - 5-year-olds.mp3"
+                },
+                {
+                        "filename": "Spawn - Are you kidding me.mp3",
+                        "title": "Are you kidding me",
+                        "path": "Spawn - Are you kidding me.mp3"
+                },
+                {
+                        "filename": "Spawn - Ass beat from behind.mp3",
+                        "title": "Ass beat from behind",
+                        "path": "Spawn - Ass beat from behind.mp3"
+                },
+                {
+                        "filename": "Spawn - Back the fuck up.mp3",
+                        "title": "Back the fuck up",
+                        "path": "Spawn - Back the fuck up.mp3"
+                },
+                {
+                        "filename": "Spawn - Break their kneecaps.mp3",
+                        "title": "Break their kneecaps",
+                        "path": "Spawn - Break their kneecaps.mp3"
+                },
+                {
+                        "filename": "Spawn - Bronze 3.mp3",
+                        "title": "Bronze 3",
+                        "path": "Spawn - Bronze 3.mp3"
+                },
+                {
+                        "filename": "Spawn - Bunch of nigs in here.mp3",
+                        "title": "Bunch of nigs in here",
+                        "path": "Spawn - Bunch of nigs in here.mp3"
+                },
+                {
+                        "filename": "Spawn - Butthole clench.mp3",
+                        "title": "Butthole clench",
+                        "path": "Spawn - Butthole clench.mp3"
+                },
+                {
+                        "filename": "Spawn - Buy me dinner first.mp3",
+                        "title": "Buy me dinner first",
+                        "path": "Spawn - Buy me dinner first.mp3"
+                },
+                {
+                        "filename": "Spawn - Bye Josh.mp3",
+                        "title": "Bye Josh",
+                        "path": "Spawn - Bye Josh.mp3"
+                },
+                {
+                        "filename": "Spawn - Call him a nig.mp3",
+                        "title": "Call him a nig",
+                        "path": "Spawn - Call him a nig.mp3"
+                },
+                {
+                        "filename": "Spawn - Come over here.mp3",
+                        "title": "Come over here",
+                        "path": "Spawn - Come over here.mp3"
+                },
+                {
+                        "filename": "Spawn - Ezreal is a gay lord.mp3",
+                        "title": "Ezreal is a gay lord",
+                        "path": "Spawn - Ezreal is a gay lord.mp3"
+                },
+                {
+                        "filename": "Spawn - Fuck Nigs.mp3",
+                        "title": "Fuck Nigs",
+                        "path": "Spawn - Fuck Nigs.mp3"
+                },
+                {
+                        "filename": "Spawn - Fuck y'all nigs.mp3",
+                        "title": "Fuck y'all nigs",
+                        "path": "Spawn - Fuck y'all nigs.mp3"
+                },
+                {
+                        "filename": "Spawn - Fuck you, Ashe.mp3",
+                        "title": "Fuck you, Ashe",
+                        "path": "Spawn - Fuck you, Ashe.mp3"
+                },
+                {
+                        "filename": "Spawn - Fuckin' Jana.mp3",
+                        "title": "Fuckin' Jana",
+                        "path": "Spawn - Fuckin' Jana.mp3"
+                },
+                {
+                        "filename": "Spawn - Game history.mp3",
+                        "title": "Game history",
+                        "path": "Spawn - Game history.mp3"
+                },
+                {
+                        "filename": "Spawn - Gay boy.mp3",
+                        "title": "Gay boy",
+                        "path": "Spawn - Gay boy.mp3"
+                },
+                {
+                        "filename": "Spawn - Gay boys.mp3",
+                        "title": "Gay boys",
+                        "path": "Spawn - Gay boys.mp3"
+                },
+                {
+                        "filename": "Spawn - Get fucked.mp3",
+                        "title": "Get fucked",
+                        "path": "Spawn - Get fucked.mp3"
+                },
+                {
+                        "filename": "Spawn - Get out of bronze.mp3",
+                        "title": "Get out of bronze",
+                        "path": "Spawn - Get out of bronze.mp3"
+                },
+                {
+                        "filename": "Spawn - Get out of my area.mp3",
+                        "title": "Get out of my area",
+                        "path": "Spawn - Get out of my area.mp3"
+                },
+                {
+                        "filename": "Spawn - Getting sucked.mp3",
+                        "title": "Getting sucked",
+                        "path": "Spawn - Getting sucked.mp3"
+                },
+                {
+                        "filename": "Spawn - Giga nigga.mp3",
+                        "title": "Giga nigga",
+                        "path": "Spawn - Giga nigga.mp3"
+                },
+                {
+                        "filename": "Spawn - Give them the circumciser.mp3",
+                        "title": "Give them the circumciser",
+                        "path": "Spawn - Give them the circumciser.mp3"
+                },
+                {
+                        "filename": "Spawn - Go fuck yourself 2.mp3",
+                        "title": "Go fuck yourself 2",
+                        "path": "Spawn - Go fuck yourself 2.mp3"
+                },
+                {
+                        "filename": "Spawn - Go fuck yourself.mp3",
+                        "title": "Go fuck yourself",
+                        "path": "Spawn - Go fuck yourself.mp3"
+                },
+                {
+                        "filename": "Spawn - Grabs my cock.mp3",
+                        "title": "Grabs my cock",
+                        "path": "Spawn - Grabs my cock.mp3"
+                },
+                {
+                        "filename": "Spawn - Groan.mp3",
+                        "title": "Groan",
+                        "path": "Spawn - Groan.mp3"
+                },
+                {
+                        "filename": "Spawn - He's bustin his nut.mp3",
+                        "title": "He's bustin his nut",
+                        "path": "Spawn - He's bustin his nut.mp3"
+                },
+                {
+                        "filename": "Spawn - Healer ults.mp3",
+                        "title": "Healer ults",
+                        "path": "Spawn - Healer ults.mp3"
+                },
+                {
+                        "filename": "Spawn - Holding my cock.mp3",
+                        "title": "Holding my cock",
+                        "path": "Spawn - Holding my cock.mp3"
+                },
+                {
+                        "filename": "Spawn - Homo in our base.mp3",
+                        "title": "Homo in our base",
+                        "path": "Spawn - Homo in our base.mp3"
+                },
+                {
+                        "filename": "Spawn - Hornet's nest.mp3",
+                        "title": "Hornet's nest",
+                        "path": "Spawn - Hornet's nest.mp3"
+                },
+                {
+                        "filename": "Spawn - How do they know I'm here.mp3",
+                        "title": "How do they know I'm here",
+                        "path": "Spawn - How do they know I'm here.mp3"
+                },
+                {
+                        "filename": "Spawn - How does he know I'm there.mp3",
+                        "title": "How does he know I'm there",
+                        "path": "Spawn - How does he know I'm there.mp3"
+                },
+                {
+                        "filename": "Spawn - How much damage.mp3",
+                        "title": "How much damage",
+                        "path": "Spawn - How much damage.mp3"
+                },
+                {
+                        "filename": "Spawn - I can't move.mp3",
+                        "title": "I can't move",
+                        "path": "Spawn - I can't move.mp3"
+                },
+                {
+                        "filename": "Spawn - I rolled.mp3",
+                        "title": "I rolled",
+                        "path": "Spawn - I rolled.mp3"
+                },
+                {
+                        "filename": "Spawn - I'm about to bust.mp3",
+                        "title": "I'm about to bust",
+                        "path": "Spawn - I'm about to bust.mp3"
+                },
+                {
+                        "filename": "Spawn - I'm gonna crush this bitch.mp3",
+                        "title": "I'm gonna crush this bitch",
+                        "path": "Spawn - I'm gonna crush this bitch.mp3"
+                },
+                {
+                        "filename": "Spawn - I'm speed.mp3",
+                        "title": "I'm speed",
+                        "path": "Spawn - I'm speed.mp3"
+                },
+                {
+                        "filename": "Spawn - It's the twin.mp3",
+                        "title": "It's the twin",
+                        "path": "Spawn - It's the twin.mp3"
+                },
+                {
+                        "filename": "Spawn - KMS.mp3",
+                        "title": "KMS",
+                        "path": "Spawn - KMS.mp3"
+                },
+                {
+                        "filename": "Spawn - Lord and savior.mp3",
+                        "title": "Lord and savior",
+                        "path": "Spawn - Lord and savior.mp3"
+                },
+                {
+                        "filename": "Spawn - My horse is retard.mp3",
+                        "title": "My horse is retard",
+                        "path": "Spawn - My horse is retard.mp3"
+                },
+                {
+                        "filename": "Spawn - Niggerman.mp3",
+                        "title": "Niggerman",
+                        "path": "Spawn - Niggerman.mp3"
+                },
+                {
+                        "filename": "Spawn - OMG.mp3",
+                        "title": "OMG",
+                        "path": "Spawn - OMG.mp3"
+                },
+                {
+                        "filename": "Spawn - Power of god and anime.mp3",
+                        "title": "Power of god and anime",
+                        "path": "Spawn - Power of god and anime.mp3"
+                },
+                {
+                        "filename": "Spawn - Put a gun in my mouth.mp3",
+                        "title": "Put a gun in my mouth",
+                        "path": "Spawn - Put a gun in my mouth.mp3"
+                },
+                {
+                        "filename": "Spawn - Scarlet witch on my cock.mp3",
+                        "title": "Scarlet witch on my cock",
+                        "path": "Spawn - Scarlet witch on my cock.mp3"
+                },
+                {
+                        "filename": "Spawn - Shivana camp.mp3",
+                        "title": "Shivana camp",
+                        "path": "Spawn - Shivana camp.mp3"
+                },
+                {
+                        "filename": "Spawn - Sick of this shit.mp3",
+                        "title": "Sick of this shit",
+                        "path": "Spawn - Sick of this shit.mp3"
+                },
+                {
+                        "filename": "Spawn - Skin of her cock.mp3",
+                        "title": "Skin of her cock",
+                        "path": "Spawn - Skin of her cock.mp3"
+                },
+                {
+                        "filename": "Spawn - Spawn's daycare.mp3",
+                        "title": "Spawn's daycare",
+                        "path": "Spawn - Spawn's daycare.mp3"
+                },
+                {
+                        "filename": "Spawn - Spiderman is up my ass.mp3",
+                        "title": "Spiderman is up my ass",
+                        "path": "Spawn - Spiderman is up my ass.mp3"
+                },
+                {
+                        "filename": "Spawn - Squirrel girl.mp3",
+                        "title": "Squirrel girl",
+                        "path": "Spawn - Squirrel girl.mp3"
+                },
+                {
+                        "filename": "Spawn - Stand in the whole thing.mp3",
+                        "title": "Stand in the whole thing",
+                        "path": "Spawn - Stand in the whole thing.mp3"
+                },
+                {
+                        "filename": "Spawn - Stinky shit.mp3",
+                        "title": "Stinky shit",
+                        "path": "Spawn - Stinky shit.mp3"
+                },
+                {
+                        "filename": "Spawn - Storm, fuck off.mp3",
+                        "title": "Storm, fuck off",
+                        "path": "Spawn - Storm, fuck off.mp3"
+                },
+                {
+                        "filename": "Spawn - Stuck on a tree.mp3",
+                        "title": "Stuck on a tree",
+                        "path": "Spawn - Stuck on a tree.mp3"
+                },
+                {
+                        "filename": "Spawn - Sucked off by the shark.mp3",
+                        "title": "Sucked off by the shark",
+                        "path": "Spawn - Sucked off by the shark.mp3"
+                },
+                {
+                        "filename": "Spawn - That demolished me.mp3",
+                        "title": "That demolished me",
+                        "path": "Spawn - That demolished me.mp3"
+                },
+                {
+                        "filename": "Spawn - That's sus.mp3",
+                        "title": "That's sus",
+                        "path": "Spawn - That's sus.mp3"
+                },
+                {
+                        "filename": "Spawn - There's a hallway.mp3",
+                        "title": "There's a hallway",
+                        "path": "Spawn - There's a hallway.mp3"
+                },
+                {
+                        "filename": "Spawn - This cunt.mp3",
+                        "title": "This cunt",
+                        "path": "Spawn - This cunt.mp3"
+                },
+                {
+                        "filename": "Spawn - Thor on my ass.mp3",
+                        "title": "Thor on my ass",
+                        "path": "Spawn - Thor on my ass.mp3"
+                },
+                {
+                        "filename": "Spawn - Those mages are cunts.mp3",
+                        "title": "Those mages are cunts",
+                        "path": "Spawn - Those mages are cunts.mp3"
+                },
+                {
+                        "filename": "Spawn - Throw my nut.mp3",
+                        "title": "Throw my nut",
+                        "path": "Spawn - Throw my nut.mp3"
+                },
+                {
+                        "filename": "Spawn - Unshit my pants.mp3",
+                        "title": "Unshit my pants",
+                        "path": "Spawn - Unshit my pants.mp3"
+                },
+                {
+                        "filename": "Spawn - Wanted to play Jin.mp3",
+                        "title": "Wanted to play Jin",
+                        "path": "Spawn - Wanted to play Jin.mp3"
+                },
+                {
+                        "filename": "Spawn - What a cunt.mp3",
+                        "title": "What a cunt",
+                        "path": "Spawn - What a cunt.mp3"
+                },
+                {
+                        "filename": "Spawn - Why are they all waiting here.mp3",
+                        "title": "Why are they all waiting here",
+                        "path": "Spawn - Why are they all waiting here.mp3"
+                },
+                {
+                        "filename": "Spawn - Wonder nig.mp3",
+                        "title": "Wonder nig",
+                        "path": "Spawn - Wonder nig.mp3"
+                },
+                {
+                        "filename": "Spawn - Wtf is he building.mp3",
+                        "title": "Wtf is he building",
+                        "path": "Spawn - Wtf is he building.mp3"
+                },
+                {
+                        "filename": "Spawn - WTF.mp3",
+                        "title": "WTF",
+                        "path": "Spawn - WTF.mp3"
+                }
+        ],
+        "Syd": [
+                {
+                        "filename": "Syd - Fuck him in the bussy.mp3",
+                        "title": "Fuck him in the bussy",
+                        "path": "Syd - Fuck him in the bussy.mp3"
+                },
+                {
+                        "filename": "Syd - Fuck you fag.mp3",
+                        "title": "Fuck you fag",
+                        "path": "Syd - Fuck you fag.mp3"
+                },
+                {
+                        "filename": "Syd - How sad 1.mp3",
+                        "title": "How sad 1",
+                        "path": "Syd - How sad 1.mp3"
+                },
+                {
+                        "filename": "Syd - How sad 2.mp3",
+                        "title": "How sad 2",
+                        "path": "Syd - How sad 2.mp3"
+                }
+        ],
+        "Tuby": [
+                {
+                        "filename": "Tuby - Ball wrinkles.mp3",
+                        "title": "Ball wrinkles",
+                        "path": "Tuby - Ball wrinkles.mp3"
+                },
+                {
+                        "filename": "Tuby - Bullshit.mp3",
+                        "title": "Bullshit",
+                        "path": "Tuby - Bullshit.mp3"
+                },
+                {
+                        "filename": "Tuby - Bust a nut.mp3",
+                        "title": "Bust a nut",
+                        "path": "Tuby - Bust a nut.mp3"
+                },
+                {
+                        "filename": "Tuby - Caitlin booty.mp3",
+                        "title": "Caitlin booty",
+                        "path": "Tuby - Caitlin booty.mp3"
+                },
+                {
+                        "filename": "Tuby - Can't move.mp3",
+                        "title": "Can't move",
+                        "path": "Tuby - Can't move.mp3"
+                },
+                {
+                        "filename": "Tuby - Cuck.mp3",
+                        "title": "Cuck",
+                        "path": "Tuby - Cuck.mp3"
+                },
+                {
+                        "filename": "Tuby - Foul bitch.mp3",
+                        "title": "Foul bitch",
+                        "path": "Tuby - Foul bitch.mp3"
+                },
+                {
+                        "filename": "Tuby - FTF.mp3",
+                        "title": "FTF",
+                        "path": "Tuby - FTF.mp3"
+                },
+                {
+                        "filename": "Tuby - Fuck me.mp3",
+                        "title": "Fuck me",
+                        "path": "Tuby - Fuck me.mp3"
+                },
+                {
+                        "filename": "Tuby - Fucked my ass.mp3",
+                        "title": "Fucked my ass",
+                        "path": "Tuby - Fucked my ass.mp3"
+                },
+                {
+                        "filename": "Tuby - Gas me up.mp3",
+                        "title": "Gas me up",
+                        "path": "Tuby - Gas me up.mp3"
+                },
+                {
+                        "filename": "Tuby - Get that hoe.mp3",
+                        "title": "Get that hoe",
+                        "path": "Tuby - Get that hoe.mp3"
+                },
+                {
+                        "filename": "Tuby - Grunt 2.mp3",
+                        "title": "Grunt 2",
+                        "path": "Tuby - Grunt 2.mp3"
+                },
+                {
+                        "filename": "Tuby - Grunt.mp3",
+                        "title": "Grunt",
+                        "path": "Tuby - Grunt.mp3"
+                },
+                {
+                        "filename": "Tuby - Help.mp3",
+                        "title": "Help",
+                        "path": "Tuby - Help.mp3"
+                },
+                {
+                        "filename": "Tuby - Horny for me.mp3",
+                        "title": "Horny for me",
+                        "path": "Tuby - Horny for me.mp3"
+                },
+                {
+                        "filename": "Tuby - I gotta get out.mp3",
+                        "title": "I gotta get out",
+                        "path": "Tuby - I gotta get out.mp3"
+                },
+                {
+                        "filename": "Tuby - I stack gooks.mp3",
+                        "title": "I stack gooks",
+                        "path": "Tuby - I stack gooks.mp3"
+                },
+                {
+                        "filename": "Tuby - I thought that boss was hard.mp3",
+                        "title": "I thought that boss was hard",
+                        "path": "Tuby - I thought that boss was hard.mp3"
+                },
+                {
+                        "filename": "Tuby - I'm cumming.mp3",
+                        "title": "I'm cumming",
+                        "path": "Tuby - I'm cumming.mp3"
+                },
+                {
+                        "filename": "Tuby - In my asshole.mp3",
+                        "title": "In my asshole",
+                        "path": "Tuby - In my asshole.mp3"
+                },
+                {
+                        "filename": "Tuby - Large cluster.mp3",
+                        "title": "Large cluster",
+                        "path": "Tuby - Large cluster.mp3"
+                },
+                {
+                        "filename": "Tuby - No no no.mp3",
+                        "title": "No no no",
+                        "path": "Tuby - No no no.mp3"
+                },
+                {
+                        "filename": "Tuby - Nobody move.mp3",
+                        "title": "Nobody move",
+                        "path": "Tuby - Nobody move.mp3"
+                },
+                {
+                        "filename": "Tuby - Oh daddy.mp3",
+                        "title": "Oh daddy",
+                        "path": "Tuby - Oh daddy.mp3"
+                },
+                {
+                        "filename": "Tuby - Orc dong.mp3",
+                        "title": "Orc dong",
+                        "path": "Tuby - Orc dong.mp3"
+                },
+                {
+                        "filename": "Tuby - Pussy.mp3",
+                        "title": "Pussy",
+                        "path": "Tuby - Pussy.mp3"
+                },
+                {
+                        "filename": "Tuby - Put it in the hole.mp3",
+                        "title": "Put it in the hole",
+                        "path": "Tuby - Put it in the hole.mp3"
+                },
+                {
+                        "filename": "Tuby - Reneckton on butthole.mp3",
+                        "title": "Reneckton on butthole",
+                        "path": "Tuby - Reneckton on butthole.mp3"
+                },
+                {
+                        "filename": "Tuby - Sex with a bear.mp3",
+                        "title": "Sex with a bear",
+                        "path": "Tuby - Sex with a bear.mp3"
+                },
+                {
+                        "filename": "Tuby - Shoot that mofo.mp3",
+                        "title": "Shoot that mofo",
+                        "path": "Tuby - Shoot that mofo.mp3"
+                },
+                {
+                        "filename": "Tuby - Shotgun bitch.mp3",
+                        "title": "Shotgun bitch",
+                        "path": "Tuby - Shotgun bitch.mp3"
+                },
+                {
+                        "filename": "Tuby - Shut your whore mouth.mp3",
+                        "title": "Shut your whore mouth",
+                        "path": "Tuby - Shut your whore mouth.mp3"
+                },
+                {
+                        "filename": "Tuby - Someone really hates.mp3",
+                        "title": "Someone really hates",
+                        "path": "Tuby - Someone really hates.mp3"
+                },
+                {
+                        "filename": "Tuby - Spread the aids.mp3",
+                        "title": "Spread the aids",
+                        "path": "Tuby - Spread the aids.mp3"
+                },
+                {
+                        "filename": "Tuby - Sucking cock.mp3",
+                        "title": "Sucking cock",
+                        "path": "Tuby - Sucking cock.mp3"
+                },
+                {
+                        "filename": "Tuby - Tappin' that ass.mp3",
+                        "title": "Tappin' that ass",
+                        "path": "Tuby - Tappin' that ass.mp3"
+                },
+                {
+                        "filename": "Tuby - That dude is so gay.mp3",
+                        "title": "That dude is so gay",
+                        "path": "Tuby - That dude is so gay.mp3"
+                },
+                {
+                        "filename": "Tuby - What.mp3",
+                        "title": "What",
+                        "path": "Tuby - What.mp3"
+                },
+                {
+                        "filename": "Tuby - Whatever dude.mp3",
+                        "title": "Whatever dude",
+                        "path": "Tuby - Whatever dude.mp3"
+                },
+                {
+                        "filename": "Tuby - Where you going.mp3",
+                        "title": "Where you going",
+                        "path": "Tuby - Where you going.mp3"
+                },
+                {
+                        "filename": "Tuby - Why didn't you bust.mp3",
+                        "title": "Why didn't you bust",
+                        "path": "Tuby - Why didn't you bust.mp3"
+                },
+                {
+                        "filename": "Tuby - Wtf is wrong with you.mp3",
+                        "title": "Wtf is wrong with you",
+                        "path": "Tuby - Wtf is wrong with you.mp3"
+                },
+                {
+                        "filename": "Tuby - You motherfucker.mp3",
+                        "title": "You motherfucker",
+                        "path": "Tuby - You motherfucker.mp3"
+                }
+        ],
+        "Tyler": [
+                {
+                        "filename": "Tyler - 3-2-1 gay.mp3",
+                        "title": "3-2-1 gay",
+                        "path": "Tyler - 3-2-1 gay.mp3"
+                },
+                {
+                        "filename": "Tyler - Are you gay 2.mp3",
+                        "title": "Are you gay 2",
+                        "path": "Tyler - Are you gay 2.mp3"
+                },
+                {
+                        "filename": "Tyler - Are you gay.mp3",
+                        "title": "Are you gay",
+                        "path": "Tyler - Are you gay.mp3"
+                },
+                {
+                        "filename": "Tyler - Biting my cock.mp3",
+                        "title": "Biting my cock",
+                        "path": "Tyler - Biting my cock.mp3"
+                },
+                {
+                        "filename": "Tyler - Burp.mp3",
+                        "title": "Burp",
+                        "path": "Tyler - Burp.mp3"
+                },
+                {
+                        "filename": "Tyler - Cuming hard.mp3",
+                        "title": "Cuming hard",
+                        "path": "Tyler - Cuming hard.mp3"
+                },
+                {
+                        "filename": "Tyler - Dirty cunt.mp3",
+                        "title": "Dirty cunt",
+                        "path": "Tyler - Dirty cunt.mp3"
+                },
+                {
+                        "filename": "Tyler - Fuck you cunt.mp3",
+                        "title": "Fuck you cunt",
+                        "path": "Tyler - Fuck you cunt.mp3"
+                },
+                {
+                        "filename": "Tyler - Fuck you in the ass.mp3",
+                        "title": "Fuck you in the ass",
+                        "path": "Tyler - Fuck you in the ass.mp3"
+                },
+                {
+                        "filename": "Tyler - Fucked in the ass.mp3",
+                        "title": "Fucked in the ass",
+                        "path": "Tyler - Fucked in the ass.mp3"
+                },
+                {
+                        "filename": "Tyler - Fucking clown.mp3",
+                        "title": "Fucking clown",
+                        "path": "Tyler - Fucking clown.mp3"
+                },
+                {
+                        "filename": "Tyler - GG.mp3",
+                        "title": "GG",
+                        "path": "Tyler - GG.mp3"
+                },
+                {
+                        "filename": "Tyler - Gtfo of here.mp3",
+                        "title": "Gtfo of here",
+                        "path": "Tyler - Gtfo of here.mp3"
+                },
+                {
+                        "filename": "Tyler - He's coming for me.mp3",
+                        "title": "He's coming for me",
+                        "path": "Tyler - He's coming for me.mp3"
+                },
+                {
+                        "filename": "Tyler - I ate his cock.mp3",
+                        "title": "I ate his cock",
+                        "path": "Tyler - I ate his cock.mp3"
+                },
+                {
+                        "filename": "Tyler - I blew my load.mp3",
+                        "title": "I blew my load",
+                        "path": "Tyler - I blew my load.mp3"
+                },
+                {
+                        "filename": "Tyler - I can't cum.mp3",
+                        "title": "I can't cum",
+                        "path": "Tyler - I can't cum.mp3"
+                },
+                {
+                        "filename": "Tyler - I can't move.mp3",
+                        "title": "I can't move",
+                        "path": "Tyler - I can't move.mp3"
+                },
+                {
+                        "filename": "Tyler - I do not look down on N.mp3",
+                        "title": "I do not look down on N",
+                        "path": "Tyler - I do not look down on N.mp3"
+                },
+                {
+                        "filename": "Tyler - I hate these nigs.mp3",
+                        "title": "I hate these nigs",
+                        "path": "Tyler - I hate these nigs.mp3"
+                },
+                {
+                        "filename": "Tyler - I pulled it out.mp3",
+                        "title": "I pulled it out",
+                        "path": "Tyler - I pulled it out.mp3"
+                },
+                {
+                        "filename": "Tyler - I'm on the ass.mp3",
+                        "title": "I'm on the ass",
+                        "path": "Tyler - I'm on the ass.mp3"
+                },
+                {
+                        "filename": "Tyler - Idc what he does.mp3",
+                        "title": "Idc what he does",
+                        "path": "Tyler - Idc what he does.mp3"
+                },
+                {
+                        "filename": "Tyler - Juicy nuts.mp3",
+                        "title": "Juicy nuts",
+                        "path": "Tyler - Juicy nuts.mp3"
+                },
+                {
+                        "filename": "Tyler - KKK rally.mp3",
+                        "title": "KKK rally",
+                        "path": "Tyler - KKK rally.mp3"
+                },
+                {
+                        "filename": "Tyler - Let's fucking go.mp3",
+                        "title": "Let's fucking go",
+                        "path": "Tyler - Let's fucking go.mp3"
+                },
+                {
+                        "filename": "Tyler - Maybe I'm gay.mp3",
+                        "title": "Maybe I'm gay",
+                        "path": "Tyler - Maybe I'm gay.mp3"
+                },
+                {
+                        "filename": "Tyler - Oh shit.mp3",
+                        "title": "Oh shit",
+                        "path": "Tyler - Oh shit.mp3"
+                },
+                {
+                        "filename": "Tyler - Popped her in the ass.mp3",
+                        "title": "Popped her in the ass",
+                        "path": "Tyler - Popped her in the ass.mp3"
+                },
+                {
+                        "filename": "Tyler - Suck this guy off.mp3",
+                        "title": "Suck this guy off",
+                        "path": "Tyler - Suck this guy off.mp3"
+                },
+                {
+                        "filename": "Tyler - Swain is gonna fuck us.mp3",
+                        "title": "Swain is gonna fuck us",
+                        "path": "Tyler - Swain is gonna fuck us.mp3"
+                },
+                {
+                        "filename": "Tyler - Sweer and sour sauce.mp3",
+                        "title": "Sweer and sour sauce",
+                        "path": "Tyler - Sweer and sour sauce.mp3"
+                },
+                {
+                        "filename": "Tyler - Why is it on burst.mp3",
+                        "title": "Why is it on burst",
+                        "path": "Tyler - Why is it on burst.mp3"
+                },
+                {
+                        "filename": "Tyler - Y'all niggas gay.mp3",
+                        "title": "Y'all niggas gay",
+                        "path": "Tyler - Y'all niggas gay.mp3"
+                }
+        ]
+};
+        
+        let currentAudio = null;
+        let currentButton = null;
+        const audioPlayer = document.getElementById('audioPlayer');
+        const nowPlaying = document.getElementById('nowPlaying');
+        const currentTrack = document.getElementById('currentTrack');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeText = document.getElementById('volumeText');
+
+        // Initialize volume
+        audioPlayer.volume = 0.5;
+
+        // Volume control
+        volumeSlider.addEventListener('input', function() {
+            const volume = this.value / 100;
+            audioPlayer.volume = volume;
+            volumeText.textContent = this.value + '%';
+        });
+
+        // Generate tabs and content
+        function generateSoundboard() {
+            const tabsContainer = document.getElementById('tabs');
+            const contentsContainer = document.getElementById('tabContents');
+            
+            let isFirst = true;
+            
+            Object.keys(audioData).forEach(tabName => {
+                // Create tab button
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tab-button' + (isFirst ? ' active' : '');
+                tabButton.textContent = tabName;
+                tabButton.onclick = () => switchTab(tabName);
+                tabsContainer.appendChild(tabButton);
+                
+                // Create tab content
+                const tabContent = document.createElement('div');
+                tabContent.className = 'tab-content' + (isFirst ? ' active' : '');
+                tabContent.id = 'tab-' + tabName;
+                
+                const soundGrid = document.createElement('div');
+                soundGrid.className = 'sound-grid';
+                
+                audioData[tabName].forEach(sound => {
+                    const soundCard = document.createElement('div');
+                    soundCard.className = "sound-title clickable";
+                    soundCard.title = sound.title;
+                    soundCard.textContent = sound.title;
+
+                    soundCard.onclick = function () {
+                        playSound(sound.path, sound.title, soundCard);
+                    };
+                    
+                    soundGrid.appendChild(soundCard);
+                });
+                
+                tabContent.appendChild(soundGrid);
+                contentsContainer.appendChild(tabContent);
+                
+                isFirst = false;
+            });
+        }
+
+        function switchTab(tabName) {
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            event.target.classList.add('active');
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        function playSound(path, title, titleElement) {
+            // Stop current audio if playing
+            if (currentAudio && !currentAudio.paused) {
+                currentAudio.pause();
+                if (currentButton) {
+                    currentButton.classList.remove('playing');
+                }
+            }
+            
+            // If clicking the same title that's playing, just stop
+            if (currentButton === titleElement && currentAudio && !currentAudio.paused) {
+                return;
+            }
+            
+            // Play new audio
+            audioPlayer.src = path;
+            audioPlayer.play();
+            currentAudio = audioPlayer;
+            currentButton = titleElement;
+            
+            titleElement.classList.add('playing');
+            
+            // Show now playing
+            currentTrack.textContent = title;
+            nowPlaying.style.display = 'block';
+            
+            // Handle audio end
+            audioPlayer.onended = function() {
+                titleElement.classList.remove('playing');
+                nowPlaying.style.display = 'none';
+                currentAudio = null;
+                currentButton = null;
+            };
+        }
+
+        function downloadSound(path, filename) {
+            const a = document.createElement('a');
+            a.href = path;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Initialize the soundboard
+        generateSoundboard();
+    </script>
+</body>
+</html>
